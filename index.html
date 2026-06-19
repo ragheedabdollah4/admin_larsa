@@ -344,11 +344,6 @@
             <textarea id="relatedLinks" placeholder="https://…"></textarea>
           </div>
 
-          <div class="form-row check">
-            <input type="checkbox" id="isFavourite" />
-            <label for="isFavourite">Mark as favourite</label>
-          </div>
-
           <div class="form-actions">
             <button type="submit" id="save-btn" class="btn-primary">Add location</button>
             <button type="button" id="cancel-btn" class="btn-ghost hidden">Cancel edit</button>
@@ -384,15 +379,14 @@
   //  1. FIREBASE CONFIG  —  PASTE YOUR OWN VALUES HERE
   //     (Firebase console → ⚙ Project settings → Your apps → Web app)
   // ====================================================================
-const firebaseConfig = {
-  apiKey: "AIzaSyDS560jlFVO25kNBJl_ttw9aji9OeeUHD8",
-  authDomain: "larsa20206.firebaseapp.com",
-  projectId: "larsa20206",
-  storageBucket: "larsa20206.firebasestorage.app",
-  messagingSenderId: "629583984597",
-  appId: "1:629583984597:web:f2391b68fd9b61bc1c2f5c",
-  measurementId: "G-WK8EB3X3ST"
-};
+  const firebaseConfig = {
+    apiKey: "PASTE_HERE",
+    authDomain: "PASTE_HERE",
+    projectId: "PASTE_HERE",
+    storageBucket: "PASTE_HERE",
+    messagingSenderId: "PASTE_HERE",
+    appId: "PASTE_HERE"
+  };
   // ====================================================================
 
   // Categories — must match the `id` values in the Android app's Category.kt
@@ -533,7 +527,7 @@ const firebaseConfig = {
       row.innerHTML = `
         <span class="idx">${num}</span>
         <div class="body">
-          <div class="name">${escapeHtml(s.name || "Untitled")} ${s.isFavourite ? '<span class="star">★</span>' : ''}</div>
+          <div class="name">${escapeHtml(s.name || "Untitled")}</div>
           <div class="meta">
             <span>${escapeHtml(s.architect || "—")}</span>
             <span class="pill">${escapeHtml(labelFor(s.categoryId))}</span>
@@ -591,8 +585,7 @@ const firebaseConfig = {
       images: linesToArray("images"),
       videoLinks: linesToArray("videoLinks"),
       referenceLinks: linesToArray("referenceLinks"),
-      relatedLinks: linesToArray("relatedLinks"),
-      isFavourite: $("isFavourite").checked
+      relatedLinks: linesToArray("relatedLinks")
     };
 
     if (!data.name) { msg.className = "msg err"; msg.textContent = "Name is required."; return; }
@@ -637,7 +630,6 @@ const firebaseConfig = {
     $("videoLinks").value = (s.videoLinks || []).join("\n");
     $("referenceLinks").value = (s.referenceLinks || []).join("\n");
     $("relatedLinks").value = (s.relatedLinks || []).join("\n");
-    $("isFavourite").checked = !!s.isFavourite;
 
     $("form-title").textContent = "Edit location";
     $("form-sub").textContent = "Editing “" + (s.name || "Untitled") + "”.";
