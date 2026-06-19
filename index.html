@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Larsa — Locations Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --paper: #e7ecf1;
+    --surface: #ffffff;
+    --ink: #16202e;
+    --muted: #5c6b7a;
+    --faint: #8a97a4;
+    --line: #cbd5df;
+    --line-soft: #e0e6ec;
+    --accent: #b5482a;        /* Baghdad brick */
+    --accent-deep: #93371f;
+    --blueprint: #2f5c8f;
+    --ok: #2f6f4f;
+    --danger: #b5482a;
+    --radius: 4px;
+    --shadow: 0 1px 2px rgba(22,32,46,.06), 0 8px 24px rgba(22,32,46,.06);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body { margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background-color: var(--paper);
+    background-image:
+      linear-gradient(rgba(47,92,143,.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(47,92,143,.04) 1px, transparent 1px);
+    background-size: 28px 28px;
+    color: var(--ink);
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  .mono { font-family: 'JetBrains Mono', monospace; }
+
+  /* ---------- shared shell ---------- */
+  .sheet {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
+
+  .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--blueprint);
+  }
+
+  h1, h2, h3 { font-family: 'Space Grotesk', sans-serif; font-weight: 600; margin: 0; }
+
+  button {
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 14px;
+    font-weight: 500;
+    transition: background-color .15s ease, color .15s ease, border-color .15s ease;
+  }
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 2px solid var(--blueprint);
+    outline-offset: 2px;
+  }
+
+  .btn-primary {
+    background: var(--accent); color: #fff;
+    padding: 11px 20px;
+  }
+  .btn-primary:hover { background: var(--accent-deep); }
+  .btn-ghost {
+    background: transparent; color: var(--muted);
+    padding: 11px 16px; border: 1px solid var(--line);
+  }
+  .btn-ghost:hover { color: var(--ink); border-color: var(--muted); }
+
+  label { display: block; font-size: 13px; font-weight: 500; color: var(--muted); margin-bottom: 6px; }
+
+  input[type=text],
+  input[type=email],
+  input[type=password],
+  input[type=number],
+  input[type=url],
+  select,
+  textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: #fbfcfd;
+    color: var(--ink);
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+  }
+  textarea { resize: vertical; min-height: 74px; }
+  input::placeholder, textarea::placeholder { color: var(--faint); }
+
+  .hidden { display: none !important; }
+
+  /* ---------- login ---------- */
+  #login-view {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+  }
+  .login-card { width: 100%; max-width: 380px; padding: 36px 32px 32px; }
+  .login-card .titleblock { border-bottom: 1px solid var(--line-soft); padding-bottom: 20px; margin-bottom: 24px; }
+  .login-card h1 { font-size: 26px; letter-spacing: -.01em; margin-top: 8px; }
+  .login-card .sub { font-size: 13px; color: var(--muted); margin-top: 6px; }
+  .field { margin-bottom: 16px; }
+  #login-form button { width: 100%; margin-top: 6px; }
+
+  /* ---------- admin ---------- */
+  .topbar {
+    border-bottom: 1px solid var(--line);
+    background: rgba(255,255,255,.82);
+    backdrop-filter: blur(6px);
+    position: sticky; top: 0; z-index: 5;
+  }
+  .topbar-inner {
+    max-width: 1080px; margin: 0 auto;
+    padding: 14px 24px;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  }
+  .brand { display: flex; align-items: baseline; gap: 12px; }
+  .brand h1 { font-size: 19px; letter-spacing: -.01em; }
+  .brand .tag { font-size: 11px; }
+  .who { display: flex; align-items: center; gap: 14px; font-size: 13px; color: var(--muted); }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 28px 24px 80px; }
+  .grid { display: grid; grid-template-columns: 420px 1fr; gap: 28px; align-items: start; }
+  @media (max-width: 880px) { .grid { grid-template-columns: 1fr; } }
+
+  .panel { padding: 24px; }
+  .panel-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+  .panel h2 { font-size: 17px; }
+  .panel .panel-sub { font-size: 12.5px; color: var(--muted); margin: 4px 0 20px; }
+
+  .form-row { margin-bottom: 16px; }
+  .form-two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .check { display: flex; align-items: center; gap: 9px; }
+  .check input { width: auto; }
+  .check label { margin: 0; color: var(--ink); font-weight: 400; font-size: 14px; }
+  .form-actions { display: flex; gap: 10px; margin-top: 22px; }
+
+  /* list */
+  .list-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 18px; flex-wrap: wrap; }
+  .list-head h2 { font-size: 17px; }
+  .filter { display: flex; align-items: center; gap: 8px; }
+  .filter select { width: auto; padding: 7px 10px; font-size: 13px; }
+  .count { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--faint); }
+
+  .rows { display: flex; flex-direction: column; gap: 10px; }
+  .row {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 16px;
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius);
+    background: #fcfdfe;
+  }
+  .row:hover { border-color: var(--line); }
+  .row .idx { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--blueprint); width: 26px; flex: none; }
+  .row .body { flex: 1; min-width: 0; }
+  .row .name { font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 15px; }
+  .row .meta { font-size: 12.5px; color: var(--muted); margin-top: 2px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .pill { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: .04em; text-transform: uppercase;
+          color: var(--blueprint); background: rgba(47,92,143,.08); padding: 2px 7px; border-radius: 3px; }
+  .star { color: var(--accent); font-size: 12px; }
+  .row-actions { display: flex; gap: 6px; flex: none; }
+  .row-actions button { padding: 7px 12px; font-size: 13px; }
+  .btn-edit { background: transparent; border: 1px solid var(--line); color: var(--muted); }
+  .btn-edit:hover { color: var(--ink); border-color: var(--muted); }
+  .btn-del { background: transparent; border: 1px solid transparent; color: var(--danger); }
+  .btn-del:hover { background: rgba(181,72,42,.08); }
+
+  .empty {
+    text-align: center; padding: 48px 20px; color: var(--muted);
+    border: 1px dashed var(--line); border-radius: var(--radius);
+  }
+  .empty .mono { color: var(--faint); font-size: 12px; display: block; margin-top: 6px; }
+
+  /* toast + inline messages */
+  .msg { font-size: 13px; margin-top: 14px; min-height: 18px; }
+  .msg.err { color: var(--danger); }
+  .msg.ok { color: var(--ok); }
+
+  #toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--ink); color: #fff; padding: 12px 20px; border-radius: var(--radius);
+    font-size: 14px; opacity: 0; pointer-events: none; transition: all .25s ease; z-index: 50;
+    box-shadow: var(--shadow);
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .config-warning {
+    max-width: 640px; margin: 40px auto; padding: 20px 24px;
+    border: 1px solid var(--accent); border-left-width: 4px; border-radius: var(--radius);
+    background: #fff; font-size: 14px; color: var(--ink);
+  }
+  .config-warning code { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; background: var(--line-soft); padding: 1px 5px; border-radius: 3px; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<section id="login-view">
+  <div class="sheet login-card">
+    <div class="titleblock">
+      <span class="eyebrow">Larsa · Survey Record</span>
+      <h1>Locations Admin</h1>
+      <p class="sub">Sign in to add and edit the architectural sites of Baghdad.</p>
+    </div>
+    <form id="login-form">
+      <div class="field">
+        <label for="email">Email</label>
+        <input type="email" id="email" autocomplete="username" required />
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" autocomplete="current-password" required />
+      </div>
+      <button type="submit" class="btn-primary">Sign in</button>
+      <p id="login-msg" class="msg err"></p>
+    </form>
+  </div>
+</section>
+
+<!-- ============ ADMIN ============ -->
+<div id="admin-view" class="hidden">
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <h1>Larsa Admin</h1>
+        <span class="eyebrow tag">Locations register</span>
+      </div>
+      <div class="who">
+        <span id="user-email" class="mono"></span>
+        <button id="logout-btn" class="btn-ghost">Sign out</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="grid">
+
+      <!-- FORM -->
+      <section class="sheet panel">
+        <div class="panel-head">
+          <h2 id="form-title">Add a location</h2>
+        </div>
+        <p class="panel-sub" id="form-sub">Fields marked with the app's data are read directly by the Android app.</p>
+
+        <form id="site-form">
+          <input type="hidden" id="doc-id" />
+
+          <div class="form-row">
+            <label for="name">Name</label>
+            <input type="text" id="name" placeholder="Baghdad Opera House" required />
+          </div>
+
+          <div class="form-row">
+            <label for="architect">Architect</label>
+            <input type="text" id="architect" placeholder="Frank Lloyd Wright" />
+          </div>
+
+          <div class="form-row">
+            <label for="categoryId">Category</label>
+            <select id="categoryId" required></select>
+          </div>
+
+          <div class="form-row form-two">
+            <div>
+              <label for="lat">Latitude</label>
+              <input type="number" id="lat" step="any" placeholder="33.3152" />
+            </div>
+            <div>
+              <label for="lng">Longitude</label>
+              <input type="number" id="lng" step="any" placeholder="44.3661" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <label for="imageUrl">Image URL</label>
+            <input type="url" id="imageUrl" placeholder="https://…" />
+          </div>
+
+          <div class="form-row">
+            <label for="description">Description</label>
+            <textarea id="description" placeholder="A short note on the site's history and significance."></textarea>
+          </div>
+
+          <div class="form-row check">
+            <input type="checkbox" id="isFavourite" />
+            <label for="isFavourite">Mark as favourite</label>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" id="save-btn" class="btn-primary">Add location</button>
+            <button type="button" id="cancel-btn" class="btn-ghost hidden">Cancel edit</button>
+          </div>
+          <p id="form-msg" class="msg"></p>
+        </form>
+      </section>
+
+      <!-- LIST -->
+      <section class="sheet panel">
+        <div class="list-head">
+          <h2>Locations</h2>
+          <div class="filter">
+            <span class="count" id="count">—</span>
+            <select id="filter-category"></select>
+          </div>
+        </div>
+        <div id="rows" class="rows"></div>
+        <div id="empty" class="empty hidden">
+          No locations yet.
+          <span class="mono">Add the first one with the form on the left.</span>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<div id="toast"></div>
+
+<script type="module">
+  // ====================================================================
+  //  1. FIREBASE CONFIG  —  PASTE YOUR OWN VALUES HERE
+  //     (Firebase console → ⚙ Project settings → Your apps → Web app)
+  // ====================================================================
+  const firebaseConfig = {
+    apiKey: "PASTE_HERE",
+    authDomain: "PASTE_HERE",
+    projectId: "PASTE_HERE",
+    storageBucket: "PASTE_HERE",
+    messagingSenderId: "PASTE_HERE",
+    appId: "PASTE_HERE"
+  };
+  // ====================================================================
+
+  // Categories — must match the `id` values in the Android app's Category.kt
+  const CATEGORIES = [
+    { id: "architecture_urbanism",  label: "Architecture & Urbanism" },
+    { id: "landscape_public_space", label: "Landscape & Public Space" },
+    { id: "statues_monuments",      label: "Statues & Monuments" },
+    { id: "bridges_infrastructure", label: "Bridges & Infrastructure" },
+    { id: "archaeological_sites",   label: "Archaeological Sites & Architectural Heritage" }
+  ];
+
+  // Guard: if config not filled in, show a friendly message instead of a blank crash.
+  if (firebaseConfig.apiKey === "PASTE_HERE") {
+    document.body.innerHTML =
+      '<div class="config-warning"><strong>Almost there.</strong><br><br>' +
+      'Open <code>index.html</code> and replace the <code>firebaseConfig</code> values ' +
+      'near the bottom with your own from the Firebase console ' +
+      '(⚙ Project settings → Your apps → Web app). Then reload this page.</div>';
+    throw new Error("Firebase config not set");
+  }
+
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import {
+    getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import {
+    getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  const sitesCol = collection(db, "sites");
+
+  // ---- element refs ----
+  const $ = (id) => document.getElementById(id);
+  const loginView = $("login-view");
+  const adminView = $("admin-view");
+
+  // ---- populate the category dropdowns ----
+  const catSelect = $("categoryId");
+  const filterSelect = $("filter-category");
+  CATEGORIES.forEach(c => {
+    catSelect.add(new Option(c.label, c.id));
+  });
+  filterSelect.add(new Option("All categories", "__all__"));
+  CATEGORIES.forEach(c => filterSelect.add(new Option(c.label, c.id)));
+  const labelFor = (id) => (CATEGORIES.find(c => c.id === id)?.label) || id;
+
+  // ---- toast helper ----
+  let toastTimer;
+  function toast(text) {
+    const t = $("toast");
+    t.textContent = text;
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove("show"), 2600);
+  }
+
+  // ====================================================================
+  //  AUTH
+  // ====================================================================
+  $("login-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const msg = $("login-msg");
+    msg.textContent = "";
+    try {
+      await signInWithEmailAndPassword(auth, $("email").value.trim(), $("password").value);
+    } catch (err) {
+      msg.textContent = friendlyAuthError(err.code);
+    }
+  });
+
+  $("logout-btn").addEventListener("click", () => signOut(auth));
+
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      loginView.classList.add("hidden");
+      adminView.classList.remove("hidden");
+      $("user-email").textContent = user.email;
+      loadSites();
+    } else {
+      adminView.classList.add("hidden");
+      loginView.classList.remove("hidden");
+      $("password").value = "";
+    }
+  });
+
+  function friendlyAuthError(code) {
+    switch (code) {
+      case "auth/invalid-email": return "That email address doesn't look right.";
+      case "auth/user-not-found":
+      case "auth/wrong-password":
+      case "auth/invalid-credential": return "Email or password is incorrect.";
+      case "auth/too-many-requests": return "Too many attempts. Wait a moment and try again.";
+      case "auth/network-request-failed": return "Network error. Check your connection.";
+      default: return "Couldn't sign in. Please try again.";
+    }
+  }
+
+  // ====================================================================
+  //  LOAD + RENDER
+  // ====================================================================
+  let allSites = [];
+
+  async function loadSites() {
+    const rows = $("rows");
+    rows.innerHTML = '<p class="count" style="padding:20px 4px;">Loading…</p>';
+    try {
+      const snap = await getDocs(query(sitesCol, orderBy("name")));
+      allSites = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      render();
+    } catch (err) {
+      rows.innerHTML = '<p class="msg err" style="padding:8px 4px;">Couldn\'t load locations: ' + err.message + '</p>';
+    }
+  }
+
+  filterSelect.addEventListener("change", render);
+
+  function render() {
+    const rows = $("rows");
+    const empty = $("empty");
+    const filter = filterSelect.value;
+    const list = filter === "__all__" ? allSites : allSites.filter(s => s.categoryId === filter);
+
+    $("count").textContent = list.length + (list.length === 1 ? " site" : " sites");
+    rows.innerHTML = "";
+
+    if (list.length === 0) { empty.classList.remove("hidden"); return; }
+    empty.classList.add("hidden");
+
+    list.forEach((s, i) => {
+      const row = document.createElement("div");
+      row.className = "row";
+      const num = String(i + 1).padStart(2, "0");
+      const coords = (s.lat || s.lng)
+        ? `<span class="mono">${(s.lat ?? 0)}, ${(s.lng ?? 0)}</span>` : "";
+      row.innerHTML = `
+        <span class="idx">${num}</span>
+        <div class="body">
+          <div class="name">${escapeHtml(s.name || "Untitled")} ${s.isFavourite ? '<span class="star">★</span>' : ''}</div>
+          <div class="meta">
+            <span>${escapeHtml(s.architect || "—")}</span>
+            <span class="pill">${escapeHtml(labelFor(s.categoryId))}</span>
+            ${coords}
+          </div>
+        </div>
+        <div class="row-actions">
+          <button class="btn-edit" data-edit="${s.id}">Edit</button>
+          <button class="btn-del" data-del="${s.id}">Delete</button>
+        </div>`;
+      rows.appendChild(row);
+    });
+
+    rows.querySelectorAll("[data-edit]").forEach(b =>
+      b.addEventListener("click", () => startEdit(b.dataset.edit)));
+    rows.querySelectorAll("[data-del]").forEach(b =>
+      b.addEventListener("click", () => removeSite(b.dataset.del)));
+  }
+
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, c =>
+      ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+  }
+
+  // ====================================================================
+  //  CREATE / UPDATE
+  // ====================================================================
+  const form = $("site-form");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const msg = $("form-msg");
+    msg.className = "msg";
+    msg.textContent = "";
+
+    const data = {
+      name: $("name").value.trim(),
+      architect: $("architect").value.trim(),
+      categoryId: $("categoryId").value,
+      lat: parseFloat($("lat").value) || 0,
+      lng: parseFloat($("lng").value) || 0,
+      imageUrl: $("imageUrl").value.trim(),
+      description: $("description").value.trim(),
+      isFavourite: $("isFavourite").checked
+    };
+
+    if (!data.name) { msg.className = "msg err"; msg.textContent = "Name is required."; return; }
+
+    const saveBtn = $("save-btn");
+    saveBtn.disabled = true;
+    const editingId = $("doc-id").value;
+
+    try {
+      if (editingId) {
+        await updateDoc(doc(db, "sites", editingId), data);
+        toast("Changes saved");
+      } else {
+        await addDoc(sitesCol, data);
+        toast("Location added");
+      }
+      resetForm();
+      await loadSites();
+    } catch (err) {
+      msg.className = "msg err";
+      msg.textContent = "Couldn't save: " + err.message;
+    } finally {
+      saveBtn.disabled = false;
+    }
+  });
+
+  function startEdit(id) {
+    const s = allSites.find(x => x.id === id);
+    if (!s) return;
+    $("doc-id").value = s.id;
+    $("name").value = s.name || "";
+    $("architect").value = s.architect || "";
+    $("categoryId").value = s.categoryId || CATEGORIES[0].id;
+    $("lat").value = s.lat ?? "";
+    $("lng").value = s.lng ?? "";
+    $("imageUrl").value = s.imageUrl || "";
+    $("description").value = s.description || "";
+    $("isFavourite").checked = !!s.isFavourite;
+
+    $("form-title").textContent = "Edit location";
+    $("form-sub").textContent = "Editing “" + (s.name || "Untitled") + "”.";
+    $("save-btn").textContent = "Save changes";
+    $("cancel-btn").classList.remove("hidden");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  $("cancel-btn").addEventListener("click", resetForm);
+
+  function resetForm() {
+    form.reset();
+    $("doc-id").value = "";
+    $("form-title").textContent = "Add a location";
+    $("form-sub").textContent = "Fields marked with the app's data are read directly by the Android app.";
+    $("save-btn").textContent = "Add location";
+    $("cancel-btn").classList.add("hidden");
+    $("form-msg").textContent = "";
+  }
+
+  // ====================================================================
+  //  DELETE
+  // ====================================================================
+  async function removeSite(id) {
+    const s = allSites.find(x => x.id === id);
+    const name = s ? (s.name || "this location") : "this location";
+    if (!confirm("Delete “" + name + "”? This can't be undone.")) return;
+    try {
+      await deleteDoc(doc(db, "sites", id));
+      toast("Location deleted");
+      if ($("doc-id").value === id) resetForm();
+      await loadSites();
+    } catch (err) {
+      toast("Couldn't delete: " + err.message);
+    }
+  }
+</script>
+</body>
+</html>
