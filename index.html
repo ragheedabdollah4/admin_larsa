@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Larsa — Larsa Admin</title>
+<title>Larsa — Locations Admin</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -226,7 +226,7 @@
     <div class="titleblock">
       <span class="eyebrow">Larsa · Survey Record</span>
       <h1>Larsa Admin</h1>
-      <p class="sub">Sign in to add and edit the architectural sites of Larsa app</p>
+      <p class="sub">Sign in to add and edit the architectural sites in Larsa.</p>
     </div>
     <form id="login-form">
       <div class="field">
@@ -288,6 +288,28 @@
 
           <div class="form-row form-two">
             <div>
+              <label for="year">Year</label>
+              <input type="text" id="year" placeholder="1988" />
+            </div>
+            <div>
+              <label for="city">City</label>
+              <input type="text" id="city" placeholder="Baghdad" />
+            </div>
+          </div>
+
+          <div class="form-row form-two">
+            <div>
+              <label for="type">Type</label>
+              <input type="text" id="type" placeholder="Residential" />
+            </div>
+            <div>
+              <label for="status">Status</label>
+              <input type="text" id="status" placeholder="Built" />
+            </div>
+          </div>
+
+          <div class="form-row form-two">
+            <div>
               <label for="lat">Latitude</label>
               <input type="number" id="lat" step="any" placeholder="33.3152" />
             </div>
@@ -298,13 +320,28 @@
           </div>
 
           <div class="form-row">
-            <label for="imageUrl">Image URL</label>
-            <input type="url" id="imageUrl" placeholder="https://…" />
+            <label for="images">Gallery images — one URL per line</label>
+            <textarea id="images" placeholder="https://…/photo1.jpg&#10;https://…/photo2.jpg"></textarea>
           </div>
 
           <div class="form-row">
-            <label for="description">Description</label>
+            <label for="description">Description (About)</label>
             <textarea id="description" placeholder="A short note on the site's history and significance."></textarea>
+          </div>
+
+          <div class="form-row">
+            <label for="videoLinks">Video links — one URL per line</label>
+            <textarea id="videoLinks" placeholder="https://youtube.com/…"></textarea>
+          </div>
+
+          <div class="form-row">
+            <label for="referenceLinks">Reference links — one URL per line</label>
+            <textarea id="referenceLinks" placeholder="https://…"></textarea>
+          </div>
+
+          <div class="form-row">
+            <label for="relatedLinks">Related links — one URL per line</label>
+            <textarea id="relatedLinks" placeholder="https://…"></textarea>
           </div>
 
           <div class="form-row check">
@@ -347,16 +384,14 @@
   //  1. FIREBASE CONFIG  —  PASTE YOUR OWN VALUES HERE
   //     (Firebase console → ⚙ Project settings → Your apps → Web app)
   // ====================================================================
- // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyDS560jlFVO25kNBJl_ttw9aji9OeeUHD8",
-  authDomain: "larsa20206.firebaseapp.com",
-  projectId: "larsa20206",
-  storageBucket: "larsa20206.firebasestorage.app",
-  messagingSenderId: "629583984597",
-  appId: "1:629583984597:web:f2391b68fd9b61bc1c2f5c",
-  measurementId: "G-WK8EB3X3ST"
-};
+  const firebaseConfig = {
+    apiKey: "PASTE_HERE",
+    authDomain: "PASTE_HERE",
+    projectId: "PASTE_HERE",
+    storageBucket: "PASTE_HERE",
+    messagingSenderId: "PASTE_HERE",
+    appId: "PASTE_HERE"
+  };
   // ====================================================================
 
   // Categories — must match the `id` values in the Android app's Category.kt
@@ -527,6 +562,14 @@ const firebaseConfig = {
   // ====================================================================
   const form = $("site-form");
 
+  // Turn a textarea (one item per line) into a clean array of strings
+  function linesToArray(id) {
+    return $(id).value
+      .split("\n")
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
+  }
+
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     const msg = $("form-msg");
@@ -539,8 +582,15 @@ const firebaseConfig = {
       categoryId: $("categoryId").value,
       lat: parseFloat($("lat").value) || 0,
       lng: parseFloat($("lng").value) || 0,
-      imageUrl: $("imageUrl").value.trim(),
+      year: $("year").value.trim(),
+      city: $("city").value.trim(),
+      type: $("type").value.trim(),
+      status: $("status").value.trim(),
       description: $("description").value.trim(),
+      images: linesToArray("images"),
+      videoLinks: linesToArray("videoLinks"),
+      referenceLinks: linesToArray("referenceLinks"),
+      relatedLinks: linesToArray("relatedLinks"),
       isFavourite: $("isFavourite").checked
     };
 
@@ -577,8 +627,15 @@ const firebaseConfig = {
     $("categoryId").value = s.categoryId || CATEGORIES[0].id;
     $("lat").value = s.lat ?? "";
     $("lng").value = s.lng ?? "";
-    $("imageUrl").value = s.imageUrl || "";
+    $("year").value = s.year || "";
+    $("city").value = s.city || "";
+    $("type").value = s.type || "";
+    $("status").value = s.status || "";
     $("description").value = s.description || "";
+    $("images").value = (s.images || []).join("\n");
+    $("videoLinks").value = (s.videoLinks || []).join("\n");
+    $("referenceLinks").value = (s.referenceLinks || []).join("\n");
+    $("relatedLinks").value = (s.relatedLinks || []).join("\n");
     $("isFavourite").checked = !!s.isFavourite;
 
     $("form-title").textContent = "Edit location";
