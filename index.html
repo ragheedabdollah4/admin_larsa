@@ -143,6 +143,15 @@
   .brand .tag { font-size: 11px; }
   .who { display: flex; align-items: center; gap: 14px; font-size: 13px; color: var(--muted); }
 
+  .viewnav { display: flex; gap: 6px; }
+  .nav-btn {
+    background: transparent; color: var(--muted);
+    padding: 8px 16px; border: 1px solid var(--line);
+    font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 14px;
+  }
+  .nav-btn:hover { color: var(--ink); border-color: var(--muted); }
+  .nav-btn.active { background: var(--blueprint); color: #fff; border-color: var(--blueprint); }
+
   .wrap { max-width: 1080px; margin: 0 auto; padding: 28px 24px 80px; }
   .grid { display: grid; grid-template-columns: 420px 1fr; gap: 28px; align-items: start; }
   @media (max-width: 880px) { .grid { grid-template-columns: 1fr; } }
@@ -251,6 +260,10 @@
         <h1>Larsa Admin</h1>
         <span class="eyebrow tag">Locations register</span>
       </div>
+      <nav class="viewnav">
+        <button id="nav-sites" class="nav-btn active" data-view="sites">Locations</button>
+        <button id="nav-persons" class="nav-btn" data-view="persons">Persons</button>
+      </nav>
       <div class="who">
         <span id="user-email" class="mono"></span>
         <button id="logout-btn" class="btn-ghost">Sign out</button>
@@ -259,7 +272,7 @@
   </header>
 
   <main class="wrap">
-    <div class="grid">
+    <div id="view-sites" class="grid">
 
       <!-- FORM -->
       <section class="sheet panel">
@@ -369,6 +382,93 @@
       </section>
 
     </div>
+
+    <!-- ============ PERSONS VIEW ============ -->
+    <div id="view-persons" class="grid hidden">
+
+      <!-- PERSON FORM -->
+      <section class="sheet panel">
+        <div class="panel-head">
+          <h2 id="person-form-title">Add a person</h2>
+        </div>
+        <p class="panel-sub" id="person-form-sub">The name must match exactly the “Architect” field used in locations, so the app can link them.</p>
+
+        <form id="person-form">
+          <input type="hidden" id="p-doc-id" />
+
+          <div class="form-row">
+            <label for="p-name">Name</label>
+            <input type="text" id="p-name" placeholder="Maath Alousi" required />
+          </div>
+
+          <div class="form-row form-two">
+            <div>
+              <label for="p-role">Role</label>
+              <input type="text" id="p-role" placeholder="Architect" />
+            </div>
+            <div>
+              <label for="p-year">Year</label>
+              <input type="text" id="p-year" placeholder="1938" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <label for="p-city">City</label>
+            <input type="text" id="p-city" placeholder="Baghdad" />
+          </div>
+
+          <div class="form-row">
+            <label for="p-photo">Photo — direct URL</label>
+            <input type="url" id="p-photo" placeholder="https://…/portrait.jpg" />
+          </div>
+
+          <div class="form-row">
+            <label for="p-description">Description (About)</label>
+            <textarea id="p-description" placeholder="A short biography of the person."></textarea>
+          </div>
+
+          <div class="form-row">
+            <label for="p-publications">Publications — one per line</label>
+            <textarea id="p-publications" placeholder="Nostos – A tale of a Street in Baghdad"></textarea>
+          </div>
+
+          <div class="form-row">
+            <label for="p-videoLinks">Video links — one URL per line</label>
+            <textarea id="p-videoLinks" placeholder="https://youtube.com/…"></textarea>
+          </div>
+
+          <div class="form-row">
+            <label for="p-referenceLinks">Reference links — one URL per line</label>
+            <textarea id="p-referenceLinks" placeholder="https://…"></textarea>
+          </div>
+
+          <div class="form-row">
+            <label for="p-relatedLinks">Related links — one URL per line</label>
+            <textarea id="p-relatedLinks" placeholder="https://…"></textarea>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" id="p-save-btn" class="btn-primary">Add person</button>
+            <button type="button" id="p-cancel-btn" class="btn-ghost hidden">Cancel edit</button>
+          </div>
+          <p id="person-form-msg" class="msg"></p>
+        </form>
+      </section>
+
+      <!-- PERSON LIST -->
+      <section class="sheet panel">
+        <div class="list-head">
+          <h2>Persons</h2>
+          <span class="count" id="person-count">—</span>
+        </div>
+        <div id="person-rows" class="rows"></div>
+        <div id="person-empty" class="empty hidden">
+          No persons yet.
+          <span class="mono">Add the first one with the form on the left.</span>
+        </div>
+      </section>
+
+    </div>
   </main>
 </div>
 
@@ -414,13 +514,14 @@ const firebaseConfig = {
     getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
   } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
   import {
-    getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy
+    getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, getDoc, query, orderBy
   } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
   const sitesCol = collection(db, "sites");
+  const personsCol = collection(db, "persons");
 
   // ---- element refs ----
   const $ = (id) => document.getElementById(id);
@@ -447,6 +548,17 @@ const firebaseConfig = {
     toastTimer = setTimeout(() => t.classList.remove("show"), 2600);
   }
 
+  // ---- view navigation (Locations / Persons) ----
+  document.querySelectorAll(".nav-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const view = btn.dataset.view;
+      document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      $("view-sites").classList.toggle("hidden", view !== "sites");
+      $("view-persons").classList.toggle("hidden", view !== "persons");
+    });
+  });
+
   // ====================================================================
   //  AUTH
   // ====================================================================
@@ -469,6 +581,7 @@ const firebaseConfig = {
       adminView.classList.remove("hidden");
       $("user-email").textContent = user.email;
       loadSites();
+      loadPersons();
     } else {
       adminView.classList.add("hidden");
       loginView.classList.remove("hidden");
@@ -654,15 +767,151 @@ const firebaseConfig = {
   // ====================================================================
   //  DELETE
   // ====================================================================
-  async function removeSite(id) {
-    const s = allSites.find(x => x.id === id);
-    const name = s ? (s.name || "this location") : "this location";
+  // ====================================================================
+  //  PERSONS  —  load / render / create / update / delete
+  // ====================================================================
+  let allPersons = [];
+
+  async function loadPersons() {
+    const rows = $("person-rows");
+    rows.innerHTML = '<p class="count" style="padding:20px 4px;">Loading…</p>';
+    try {
+      const snap = await getDocs(query(personsCol, orderBy("name")));
+      allPersons = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderPersons();
+    } catch (err) {
+      rows.innerHTML = '<p class="msg err" style="padding:8px 4px;">Couldn\'t load persons: ' + err.message + '</p>';
+    }
+  }
+
+  function renderPersons() {
+    const rows = $("person-rows");
+    const empty = $("person-empty");
+    $("person-count").textContent = allPersons.length + (allPersons.length === 1 ? " person" : " persons");
+    rows.innerHTML = "";
+
+    if (allPersons.length === 0) { empty.classList.remove("hidden"); return; }
+    empty.classList.add("hidden");
+
+    allPersons.forEach((p, i) => {
+      const row = document.createElement("div");
+      row.className = "row";
+      const num = String(i + 1).padStart(2, "0");
+      row.innerHTML = `
+        <span class="idx">${num}</span>
+        <div class="body">
+          <div class="name">${escapeHtml(p.name || "Unnamed")}</div>
+          <div class="meta">
+            <span>${escapeHtml(p.role || "—")}</span>
+            ${p.city ? `<span class="pill">${escapeHtml(p.city)}</span>` : ""}
+            ${p.year ? `<span class="mono">${escapeHtml(p.year)}</span>` : ""}
+          </div>
+        </div>
+        <div class="row-actions">
+          <button class="btn-edit" data-pedit="${p.id}">Edit</button>
+          <button class="btn-del" data-pdel="${p.id}">Delete</button>
+        </div>`;
+      rows.appendChild(row);
+    });
+
+    rows.querySelectorAll("[data-pedit]").forEach(b =>
+      b.addEventListener("click", () => startEditPerson(b.dataset.pedit)));
+    rows.querySelectorAll("[data-pdel]").forEach(b =>
+      b.addEventListener("click", () => removePerson(b.dataset.pdel)));
+  }
+
+  const personForm = $("person-form");
+
+  function personLinesToArray(id) {
+    return $(id).value.split("\n").map(s => s.trim()).filter(s => s.length > 0);
+  }
+
+  personForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const msg = $("person-form-msg");
+    msg.className = "msg";
+    msg.textContent = "";
+
+    const data = {
+      name: $("p-name").value.trim(),
+      role: $("p-role").value.trim(),
+      year: $("p-year").value.trim(),
+      city: $("p-city").value.trim(),
+      photo: $("p-photo").value.trim(),
+      description: $("p-description").value.trim(),
+      publications: personLinesToArray("p-publications"),
+      videoLinks: personLinesToArray("p-videoLinks"),
+      referenceLinks: personLinesToArray("p-referenceLinks"),
+      relatedLinks: personLinesToArray("p-relatedLinks")
+    };
+
+    if (!data.name) { msg.className = "msg err"; msg.textContent = "Name is required."; return; }
+
+    const saveBtn = $("p-save-btn");
+    saveBtn.disabled = true;
+    const editingId = $("p-doc-id").value;
+
+    try {
+      if (editingId) {
+        await updateDoc(doc(db, "persons", editingId), data);
+        toast("Person saved");
+      } else {
+        await addDoc(personsCol, data);
+        toast("Person added");
+      }
+      resetPersonForm();
+      await loadPersons();
+    } catch (err) {
+      msg.className = "msg err";
+      msg.textContent = "Couldn't save: " + err.message;
+    } finally {
+      saveBtn.disabled = false;
+    }
+  });
+
+  function startEditPerson(id) {
+    const p = allPersons.find(x => x.id === id);
+    if (!p) return;
+    $("p-doc-id").value = p.id;
+    $("p-name").value = p.name || "";
+    $("p-role").value = p.role || "";
+    $("p-year").value = p.year || "";
+    $("p-city").value = p.city || "";
+    $("p-photo").value = p.photo || "";
+    $("p-description").value = p.description || "";
+    $("p-publications").value = (p.publications || []).join("\n");
+    $("p-videoLinks").value = (p.videoLinks || []).join("\n");
+    $("p-referenceLinks").value = (p.referenceLinks || []).join("\n");
+    $("p-relatedLinks").value = (p.relatedLinks || []).join("\n");
+
+    $("person-form-title").textContent = "Edit person";
+    $("person-form-sub").textContent = "Editing “" + (p.name || "Unnamed") + "”.";
+    $("p-save-btn").textContent = "Save changes";
+    $("p-cancel-btn").classList.remove("hidden");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  $("p-cancel-btn").addEventListener("click", resetPersonForm);
+
+  function resetPersonForm() {
+    personForm.reset();
+    $("p-doc-id").value = "";
+    $("person-form-title").textContent = "Add a person";
+    $("person-form-sub").textContent = "The name must match exactly the “Architect” field used in locations, so the app can link them.";
+    $("p-save-btn").textContent = "Add person";
+    $("p-cancel-btn").classList.add("hidden");
+    $("person-form-msg").textContent = "";
+  }
+
+  async function removePerson(id) {
+    const p = allPersons.find(x => x.id === id);
+    const name = p ? (p.name || "this person") : "this person";
     if (!confirm("Delete “" + name + "”? This can't be undone.")) return;
     try {
-      await deleteDoc(doc(db, "sites", id));
-      toast("Location deleted");
-      if ($("doc-id").value === id) resetForm();
-      await loadSites();
+      await deleteDoc(doc(db, "persons", id));
+      toast("Person deleted");
+      if ($("p-doc-id").value === id) resetPersonForm();
+      await loadPersons();
     } catch (err) {
       toast("Couldn't delete: " + err.message);
     }
